@@ -6,13 +6,13 @@ import org.json.JSONObject;
 import org.json.JSONException;
 
 import java.io.File;
-
-import android.os.Environment;
-
+import java.io.StringWriter;
+import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.List;
 
 import android.net.Uri;
+import android.os.Environment;
 import android.database.Cursor;
 import android.content.Context;
 import android.provider.MediaStore;
@@ -25,8 +25,8 @@ public class GalleryManager extends CordovaPlugin {
     @Override
     public boolean execute(
         String action,
-        JSONArray data,
-        CallbackContext callbackContext
+        final JSONArray data,
+        final CallbackContext callbackContext
     ) throws JSONException {
 
         this.cbContext = callbackContext;
@@ -39,6 +39,8 @@ public class GalleryManager extends CordovaPlugin {
 
             this.cordova.getThreadPool().execute(new Runnable() {
                 public void run() {
+
+                    try{
 
                     String[] thumbColumns = { MediaStore.Video.Thumbnails.DATA,
                         MediaStore.Video.Thumbnails.VIDEO_ID };
@@ -81,17 +83,28 @@ public class GalleryManager extends CordovaPlugin {
 
                     }
 
-                    sendUpdate(videoList);
+                    sendUpdate(videoList.toString());
+
+                    } catch (JSONException e) {
+
+                        StringWriter sw = new StringWriter();
+                        e.printStackTrace(new PrintWriter(sw));
+                        String exceptionAsString = sw.toString();
+
+                        callbackContext.error(exceptionAsString);
+                    }
                 }
             });
-        }
 
-        private void sendUpdate(String data) {
-            PluginResult result = new PluginResult(PluginResult.Status.OK, data);
-            result.setKeepCallback(true);
-            this.cbContext.sendPluginResult(result);
+            return true;
         }
 
         return false;
+    }
+
+    private void sendUpdate(String data) {
+        PluginResult result = new PluginResult(PluginResult.Status.OK, data);
+        result.setKeepCallback(true);
+        this.cbContext.sendPluginResult(result);
     }
 }
